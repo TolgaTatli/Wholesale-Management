@@ -136,13 +136,14 @@ function CustomerDashboard({ user, onLogout }) {
   };
 
   const makePayment = async (orderId, amount) => {
-    const paymentAmount = prompt(`Ödeme tutarı girin (Maks: ${amount}₺):`, amount);
-    if (!paymentAmount) return;
+    if (!window.confirm(`${amount.toLocaleString('tr-TR')}₺ tutarında ödeme yapılacak. Onaylıyor musunuz?`)) {
+      return;
+    }
 
     try {
       await api.makePayment({
         Order_ID: orderId,
-        Amount_Paid: parseFloat(paymentAmount),
+        Amount_Paid: amount,
         Payment_Date: new Date().toISOString().split('T')[0],
         Payment_Status: 'Paid'
       });
@@ -310,7 +311,7 @@ function CustomerDashboard({ user, onLogout }) {
                       </button>
                     ) : (
                       <>
-                        {!order.Payment_Complete && (
+                        {!order.Payment_Complete && order.Total_Amount > 0 && (
                           <button className="pay-btn" onClick={() => makePayment(order.Order_ID, order.Total_Amount)}>
                             💳 Ödeme Yap
                           </button>
