@@ -99,11 +99,25 @@ router.post('/payment', async (req, res) => {
       throw new Error('Bu sipariş zaten tamamen ödenmiş');
     }
     
-    // Instantiate Transaction Entity - Create payment record
-    await connection.query(
-      'INSERT INTO transaction_payment (Order_ID, Amount_Paid, Payment_Date, Payment_Status) VALUES (?, ?, ?, ?)',
-      [Order_ID, Amount_Paid, Payment_Date, Payment_Status]
+    // Check if pending payment exists, update it instead of inserting new one
+    const [[pendingPayment]] = await connection.query(
+      'SELECT Payment_ID FROM transaction_payment WHERE Order_ID = ? AND Payment_Status = "Pending" ORDER BY Payment_ID LIMIT 1',
+      [Order_ID]
     );
+    
+    if (pendingPayment) {
+      // Update existing pending payment
+      await connection.query(
+        'UPDATE transaction_payment SET Amount_Paid = Amount_Paid + ?, Payment_Date = ?, Payment_Status = ? WHERE Payment_ID = ?',
+        [Amount_Paid, Payment_Date, Payment_Status, pendingPayment.Payment_ID]
+      );
+    } else {
+      // No pending payment, insert new one
+      await connection.query(
+        'INSERT INTO transaction_payment (Order_ID, Amount_Paid, Payment_Date, Payment_Status) VALUES (?, ?, ?, ?)',
+        [Order_ID, Amount_Paid, Payment_Date, Payment_Status]
+      );
+    }
     
     // 🔒 Verify Aggregate Attributes - Calculate total paid (includes new payment)
     const [[totalPaid]] = await connection.query(
