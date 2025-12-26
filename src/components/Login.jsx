@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Login.css';
 
 function Login({ onLogin }) {
   const [userType, setUserType] = useState(null); // 'admin' or 'customer'
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [customers] = useState([
-    { id: 1, name: 'ABC Şirketi' },
-    { id: 2, name: 'XYZ Ltd' },
-    { id: 3, name: 'DEF Corporation' }
-  ]);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch customers from database
+  useEffect(() => {
+    if (userType === 'customer') {
+      setLoading(true);
+      fetch('http://localhost:5000/api/customers')
+        .then(res => res.json())
+        .then(data => {
+          setCustomers(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Müşteriler yüklenemedi:', err);
+          setLoading(false);
+          alert('Müşteriler yüklenemedi. Lütfen backend\'in çalıştığından emin olun.');
+        });
+    }
+  }, [userType]);
 
   const handleAdminLogin = () => {
     onLogin({ type: 'admin' });
@@ -19,7 +34,7 @@ function Login({ onLogin }) {
       alert('Lütfen müşteri seçin!');
       return;
     }
-    const customer = customers.find(c => c.id === parseInt(selectedCustomer));
+    const customer = customers.find(c => c.Customer_ID === parseInt(selectedCustomer));
     onLogin({ type: 'customer', customer });
   };
 
@@ -71,20 +86,24 @@ function Login({ onLogin }) {
         <h2>👤 Müşteri Girişi</h2>
         <p className="info">Müşteri adınızı seçin</p>
         
-        <select 
-          className="customer-select"
-          value={selectedCustomer}
-          onChange={(e) => setSelectedCustomer(e.target.value)}
-        >
-          <option value="">-- Müşteri Seçin --</option>
-          {customers.map(customer => (
-            <option key={customer.id} value={customer.id}>
-              {customer.name}
-            </option>
-          ))}
-        </select>
+        {loading ? (
+          <p className="loading">Müşteriler yükleniyor...</p>
+        ) : (
+          <select 
+            className="customer-select"
+            value={selectedCustomer}
+            onChange={(e) => setSelectedCustomer(e.target.value)}
+          >
+            <option value="">-- Müşteri Seçin --</option>
+            {customers.map(customer => (
+              <option key={customer.Customer_ID} value={customer.Customer_ID}>
+                {customer.Name}
+              </option>
+            ))}
+          </select>
+        )}
         
-        <button className="submit-btn" onClick={handleCustomerLogin}>
+        <button className="submit-btn" onClick={handleCustomerLogin} disabled={loading}>
           Giriş Yap
         </button>
         <button className="back-btn" onClick={() => setUserType(null)}>
