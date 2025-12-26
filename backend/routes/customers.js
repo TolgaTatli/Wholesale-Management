@@ -97,6 +97,16 @@ router.delete('/:id', async (req, res) => {
   try {
     await connection.beginTransaction();
     
+    // 🔒 Check if customer has orders
+    const [[orderCheck]] = await connection.query(
+      'SELECT COUNT(*) as count FROM `order` WHERE Customer_ID = ?',
+      [req.params.id]
+    );
+    
+    if (orderCheck.count > 0) {
+      throw new Error(`Bu müşterinin ${orderCheck.count} siparişi var! Önce siparişleri silin.`);
+    }
+    
     // CASCADE nedeniyle customer_loc, order, transaction_payment da silinir
     await connection.query('DELETE FROM customer WHERE Customer_ID = ?', [req.params.id]);
     

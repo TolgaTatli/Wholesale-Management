@@ -63,7 +63,17 @@ router.delete('/:id', async (req, res) => {
   try {
     await connection.beginTransaction();
     
-    // CASCADE nedeniyle product tablosu etkilenebilir
+    // 🔒 Check if supplier has products
+    const [[productCheck]] = await connection.query(
+      'SELECT COUNT(*) as count FROM product WHERE Supplier_ID = ?',
+      [req.params.id]
+    );
+    
+    if (productCheck.count > 0) {
+      throw new Error(`Bu tedarikçinin ${productCheck.count} ürünü var! Önce ürünleri silin veya başka tedarikçiye atayın.`);
+    }
+    
+    // CASCADE nedeniyle product tablosu etkilenebilir (ama zaten yok)
     await connection.query('DELETE FROM supplier WHERE Supplier_ID = ?', [req.params.id]);
     
     await connection.commit();

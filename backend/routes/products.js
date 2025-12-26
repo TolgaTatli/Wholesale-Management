@@ -71,7 +71,17 @@ router.delete('/:id', async (req, res) => {
   try {
     await connection.beginTransaction();
     
-    // CASCADE nedeniyle has tablosu da etkilenir
+    // 🔒 Check if product is used in any orders
+    const [[orderCheck]] = await connection.query(
+      'SELECT COUNT(*) as count FROM has WHERE Product_ID = ?',
+      [req.params.id]
+    );
+    
+    if (orderCheck.count > 0) {
+      throw new Error(`Bu ürün ${orderCheck.count} siparişte kullanılıyor! Önce siparişleri silin.`);
+    }
+    
+    // CASCADE nedeniyle has tablosu da etkilenir (ama zaten yok)
     await connection.query('DELETE FROM product WHERE Product_ID = ?', [req.params.id]);
     
     await connection.commit();

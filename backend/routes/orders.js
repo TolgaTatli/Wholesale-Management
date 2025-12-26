@@ -105,7 +105,7 @@ router.post('/', async (req, res) => {
     
     // Add products and calculate total
     for (const item of products) {
-      
+
       const [[product]] = await connection.query(
         'SELECT Product_ID, Unit_Price, Current_Quantity FROM product WHERE Product_ID = ? FOR UPDATE',
         [item.Product_ID]
@@ -187,11 +187,25 @@ router.delete('/:id', async (req, res) => {
   try {
     await connection.beginTransaction();
     
+    // 🔒 Get order products BEFORE deletion to restore stock
+    const [orderProducts] = await connection.query(
+      'SELECT Product_ID, Quantity FROM has WHERE Order_ID = ?',
+      [req.params.id]
+    );
+    
+    // Restore stock for each product
+    for (const item of orderProducts) {
+      await connection.query(
+        'UPDATE product SET Current_Quantity = Current_Quantity + ? WHERE Product_ID = ?',
+        [item.Quantity, item.Product_ID]
+      );
+    }
+    
     // CASCADE nedeniyle has ve transaction_payment da silinir
     await connection.query('DELETE FROM `order` WHERE Order_ID = ?', [req.params.id]);
     
     await connection.commit();
-    res.json({ message: 'Sipariş silindi' });
+    res.json({ message: 'Sipariş silindi ve stok geri yüklendi' });
   } catch (error) {
     await connection.rollback();
     res.status(500).json({ error: error.message });
