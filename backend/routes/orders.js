@@ -4,6 +4,7 @@ import pool from '../config/database.js';
 const router = express.Router();
 
 // Tüm siparişleri getir
+
 router.get('/', async (req, res) => {
   try {
     const [orders] = await pool.query(`
@@ -104,14 +105,23 @@ router.post('/', async (req, res) => {
     
     // Add products and calculate total
     for (const item of products) {
+      
+      const [[product]] = await connection.query(
+        'SELECT Product_ID, Unit_Price, Current_Quantity FROM product WHERE Product_ID = ? FOR UPDATE',
+        [item.Product_ID]
+      );
+      
+      if (!product) {
+        throw new Error(`Ürün bulunamadı: ${item.Product_ID}`);
+      }
+      
+      if (product.Current_Quantity < item.Quantity) {
+        throw new Error(`Yetersiz stok! Ürün: ${item.Product_ID}, Mevcut: ${product.Current_Quantity}, İstenen: ${item.Quantity}`);
+      }
+      
       await connection.query(
         'INSERT INTO has (Order_ID, Product_ID, Quantity) VALUES (?, ?, ?)',
         [orderId, item.Product_ID, item.Quantity]
-      );
-      
-      const [[product]] = await connection.query(
-        'SELECT Unit_Price FROM product WHERE Product_ID = ?',
-        [item.Product_ID]
       );
       
       totalAmount += product.Unit_Price * item.Quantity;
@@ -173,11 +183,20 @@ router.put('/:id', async (req, res) => {
 
 // Sipariş sil
 router.delete('/:id', async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    await pool.query('DELETE FROM `order` WHERE Order_ID = ?', [req.params.id]);
+    await connection.beginTransaction();
+    
+    // CASCADE nedeniyle has ve transaction_payment da silinir
+    await connection.query('DELETE FROM `order` WHERE Order_ID = ?', [req.params.id]);
+    
+    await connection.commit();
     res.json({ message: 'Sipariş silindi' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
   }
 });
 

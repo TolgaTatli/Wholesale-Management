@@ -44,9 +44,12 @@ router.get('/:id/addresses', async (req, res) => {
 
 // Yeni müşteri ekle
 router.post('/', async (req, res) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+    
     const { Name, Phone, Email, addresses } = req.body;
-    const [result] = await pool.query(
+    const [result] = await connection.query(
       'INSERT INTO customer (Name, Phone, Email) VALUES (?, ?, ?)',
       [Name, Phone, Email]
     );
@@ -54,19 +57,23 @@ router.post('/', async (req, res) => {
     // Adresleri ekle
     if (addresses && addresses.length > 0) {
       for (const address of addresses) {
-        await pool.query(
+        await connection.query(
           'INSERT INTO customer_loc (Customer_ID, Customer_Address) VALUES (?, ?)',
           [result.insertId, address]
         );
       }
     }
     
+    await connection.commit();
     res.status(201).json({ 
       message: 'Müşteri eklendi',
       Customer_ID: result.insertId 
     });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
   }
 });
 
@@ -86,11 +93,20 @@ router.put('/:id', async (req, res) => {
 
 // Müşteri sil
 router.delete('/:id', async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    await pool.query('DELETE FROM customer WHERE Customer_ID = ?', [req.params.id]);
+    await connection.beginTransaction();
+    
+    // CASCADE nedeniyle customer_loc, order, transaction_payment da silinir
+    await connection.query('DELETE FROM customer WHERE Customer_ID = ?', [req.params.id]);
+    
+    await connection.commit();
     res.json({ message: 'Müşteri silindi' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
   }
 });
 

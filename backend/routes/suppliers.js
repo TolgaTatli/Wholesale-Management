@@ -59,11 +59,20 @@ router.put('/:id', async (req, res) => {
 
 // Tedarikçi sil
 router.delete('/:id', async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    await pool.query('DELETE FROM supplier WHERE Supplier_ID = ?', [req.params.id]);
+    await connection.beginTransaction();
+    
+    // CASCADE nedeniyle product tablosu etkilenebilir
+    await connection.query('DELETE FROM supplier WHERE Supplier_ID = ?', [req.params.id]);
+    
+    await connection.commit();
     res.json({ message: 'Tedarikçi silindi' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
   }
 });
 

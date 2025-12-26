@@ -11,9 +11,9 @@ router.post('/cancel/:orderId', async (req, res) => {
     
     const orderId = req.params.orderId;
     
-    // Validate Cancellation Eligibility - Verify order exists
+    // 🔒 Validate Cancellation Eligibility - Lock order row
     const [[order]] = await connection.query(
-      'SELECT * FROM `order` WHERE Order_ID = ?',
+      'SELECT * FROM `order` WHERE Order_ID = ? FOR UPDATE',
       [orderId]
     );
     
@@ -37,8 +37,14 @@ router.post('/cancel/:orderId', async (req, res) => {
       [orderId]
     );
     
-    // Update Product Attributes - Increase Current_Quantity (restore to warehouse stock)
+    // 🔒 Update Product Attributes - Lock and restore stock
     for (const item of orderProducts) {
+      // Lock product row to prevent concurrent stock issues
+      await connection.query(
+        'SELECT Product_ID FROM product WHERE Product_ID = ? FOR UPDATE',
+        [item.Product_ID]
+      );
+      
       await connection.query(
         'UPDATE product SET Current_Quantity = Current_Quantity + ? WHERE Product_ID = ?',
         [item.Quantity, item.Product_ID]
