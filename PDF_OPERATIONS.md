@@ -3,7 +3,7 @@
 ## 4.2.1 Process Sales Order (Modifies Four Entities)
 
 ```javascript
-// Yeni sipariş oluştur - 4.2.1 Process Sales Order
+// Create new order - 4.2.1 Process Sales Order
 router.post('/', async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
       );
       
       if (!product || product.Current_Quantity < item.Quantity) {
-        throw new Error(`Yetersiz stok: Ürün ${item.Product_ID}`);
+        throw new Error(`Insufficient stock: Product ${item.Product_ID}`);
       }
     }
     
@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
     );
     
     if (!customer) {
-      throw new Error('Müşteri bulunamadı');
+      throw new Error('Customer not found');
     }
     
     // Instantiate Order Entity
@@ -50,11 +50,11 @@ router.post('/', async (req, res) => {
       );
       
       if (!product) {
-        throw new Error(`Ürün bulunamadı: ${item.Product_ID}`);
+        throw new Error(`Product not found: ${item.Product_ID}`);
       }
       
       if (product.Current_Quantity < item.Quantity) {
-        throw new Error(`Yetersiz stok! Ürün: ${item.Product_ID}, Mevcut: ${product.Current_Quantity}, İstenen: ${item.Quantity}`);
+        throw new Error(`Insufficient stock! Product: ${item.Product_ID}, Available: ${product.Current_Quantity}, Requested: ${item.Quantity}`);
       }
       
       await connection.query(
@@ -93,7 +93,7 @@ router.post('/', async (req, res) => {
     
     await connection.commit();
     res.status(201).json({ 
-      message: 'Sipariş oluşturuldu',
+      message: 'Order created',
       Order_ID: orderId,
       Total_Amount: totalAmount
     });
@@ -134,7 +134,7 @@ router.post('/cancel/:orderId', async (req, res) => {
     );
     
     if (!order) {
-      throw new Error('Sipariş bulunamadı');
+      throw new Error('Order not found');
     }
     
     // Check if already cancelled
@@ -144,7 +144,7 @@ router.post('/cancel/:orderId', async (req, res) => {
     );
     
     if (existingCancel) {
-      throw new Error('Bu sipariş zaten iptal edilmiş');
+      throw new Error('This order has already been cancelled');
     }
     
     // Get order products
@@ -182,7 +182,7 @@ router.post('/cancel/:orderId', async (req, res) => {
     
     await connection.commit();
     res.json({ 
-      message: 'Sipariş başarıyla iptal edildi',
+      message: 'Order successfully cancelled',
       orderId: orderId 
     });
   } catch (error) {
@@ -223,11 +223,11 @@ router.post('/payment', async (req, res) => {
     );
     
     if (!order) {
-      throw new Error('Sipariş bulunamadı');
+      throw new Error('Order not found');
     }
     
     if (order.Payment_Complete === 1) {
-      throw new Error('Bu sipariş zaten tamamen ödenmiş');
+      throw new Error('This order has already been fully paid');
     }
     
     // Instantiate Transaction Entity - Create payment record
@@ -252,7 +252,7 @@ router.post('/payment', async (req, res) => {
     
     await connection.commit();
     res.json({ 
-      message: 'Ödeme başarıyla kaydedildi',
+      message: 'Payment successfully recorded',
       totalPaid: totalPaid.total,
       remainingBalance: order.Total_Amount - totalPaid.total
     });

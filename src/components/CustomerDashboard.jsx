@@ -29,7 +29,7 @@ function CustomerDashboard({ user, onLogout }) {
   const loadMyOrders = async () => {
     try {
       const allOrders = await api.getOrders();
-      const filtered = allOrders.filter(o => o.Customer_ID === user.customer.id);
+      const filtered = allOrders.filter(o => o.Customer_ID === user.customer.Customer_ID);
       setMyOrders(filtered);
     } catch (error) {
       console.error('Siparişler yüklenemedi:', error);
@@ -38,7 +38,7 @@ function CustomerDashboard({ user, onLogout }) {
 
   const loadAddresses = async () => {
     try {
-      const data = await api.getCustomerAddresses(user.customer.id);
+      const data = await api.getCustomerAddresses(user.customer.Customer_ID);
       setAddresses(data);
       if (data.length > 0) {
         setSelectedAddress(data[0].Customer_Address);
@@ -93,7 +93,7 @@ function CustomerDashboard({ user, onLogout }) {
       const deliveryDate = new Date(orderDate.getTime() + 7*24*60*60*1000); // 7 gün sonra
       
       const orderData = {
-        Customer_ID: user.customer.id,
+        Customer_ID: user.customer.Customer_ID,
         Order_Date: orderDate.toISOString().split('T')[0],
         Delivery_Date: deliveryDate.toISOString().split('T')[0],
         Due_Date: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
@@ -160,7 +160,7 @@ function CustomerDashboard({ user, onLogout }) {
     <div className="customer-dashboard">
       <header className="customer-header">
         <div className="customer-info">
-          <h2>👤 {user.customer.name}</h2>
+          <h2>👤 {user.customer.Name}</h2>
           <p>Müşteri Paneli</p>
         </div>
         <button className="logout-btn" onClick={onLogout}>
