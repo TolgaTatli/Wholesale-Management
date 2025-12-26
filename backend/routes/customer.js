@@ -85,14 +85,18 @@ router.post('/payment', async (req, res) => {
     
     const { Order_ID, Amount_Paid, Payment_Date, Payment_Status } = req.body;
     
-    // Validate Order Association - Verify order exists
+    // 🔒 Validate Order Association - Lock order row
     const [[order]] = await connection.query(
-      'SELECT * FROM `order` WHERE Order_ID = ?',
+      'SELECT * FROM `order` WHERE Order_ID = ? FOR UPDATE',
       [Order_ID]
     );
     
     if (!order) {
       throw new Error('Sipariş bulunamadı');
+    }
+    
+    if (order.Payment_Complete === 1) {
+      throw new Error('Bu sipariş zaten tamamen ödenmiş');
     }
     
     // Instantiate Transaction Entity - Create payment record
@@ -101,9 +105,9 @@ router.post('/payment', async (req, res) => {
       [Order_ID, Amount_Paid, Payment_Date, Payment_Status]
     );
     
-    // Verify Aggregate Attributes - Calculate total paid
+    // 🔒 Verify Aggregate Attributes - Calculate total paid (includes new payment)
     const [[totalPaid]] = await connection.query(
-      'SELECT SUM(Amount_Paid) as total FROM transaction_payment WHERE Order_ID = ? AND Payment_Status != "Refunded"',
+      'SELECT SUM(Amount_Paid) as total FROM transaction_payment WHERE Order_ID = ? AND Payment_Status != "Refunded" AND Payment_Status != "Cancelled"',
       [Order_ID]
     );
     
