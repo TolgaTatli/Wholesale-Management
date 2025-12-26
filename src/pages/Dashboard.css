@@ -1,0 +1,97 @@
+.dashboard {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard h2 {
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stat-icon {
+  font-size: 3rem;
+}
+
+.stat-info h3 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-info p {
+  margin: 0.25rem 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.stat-card.products { border-left: 4px solid #667eea; }
+.stat-card.customers { border-left: 4px solid #f093fb; }
+.stat-card.orders { border-left: 4px solid #4facfe; }
+.stat-card.revenue { border-left: 4px solid #43e97b; }
+
+.alerts {
+  display: grid;
+  gap: 1rem;
+}
+
+.alert {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid;
+}
+
+.alert.warning {
+  border-color: #ffa500;
+  background: #fff9e6;
+}
+
+.alert.danger {
+  border-color: #ff4444;
+  background: #ffe6e6;
+}
+
+.alert h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.alert ul {
+  margin: 0.5rem 0 0 1.5rem;
+  padding: 0;
+}
+
+.alert li {
+  margin: 0.25rem 0;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
+}
